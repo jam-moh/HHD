@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hip Strength %BW Calculator - Full</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; }
+h2 { margin-bottom: 5px; }
+table { border-collapse: collapse; width: auto; font-size: 13px; margin-bottom: 20px; }
+th, td { border: 1px solid #999; padding: 4px 6px; text-align: center; white-space: nowrap; }
+th { background-color: #f0f0f0; }
+input[type="number"] { width: 70px; }
+textarea { width: 100%; height: 250px; font-family: Consolas, monospace; font-size: 12px; margin-top: 10px; }
+button { padding: 6px 12px; font-size: 13px; margin-top: 10px; margin-right: 5px; }
+</style>
+<script>
+// Normative values in %BW from Alvarenga et al., 2019
+const normativeValues = {
+  "Hip Flexion – Sitting": 38.5,
+  "Hip Extension – Prone": 27.0,
+  "Hip Abduction – Sidelying": 16.9,
+  "Hip Adduction – Sidelying": 16.9,
+  "Hip Abduction – Supine": 16.9,
+  "Hip Adduction – Supine": 16.9,
+  "Hip IR – Sitting": 23.8,
+  "Hip ER – Sitting": 17.1,
+  "Hip IR – Prone": 23.8,
+  "Hip ER – Prone": 17.1
+};
+
+// Map motion names using keywords
+function mapMotion(motionRaw) {
+  const side = motionRaw.toLowerCase().startsWith("right") ? "Right" : "Left";
+  const lower = motionRaw.toLowerCase();
+  let motionKey = "";
+
+  if (lower.includes("flexion") && lower.includes("sitting")) motionKey = "Hip Flexion – Sitting";
+  else if (lower.includes("extension") && lower.includes("prone")) motionKey = "Hip Extension – Prone";
+  else if (lower.includes("abduction") && lower.includes("sidelying")) motionKey = "Hip Abduction – Sidelying";
+  else if (lower.includes("adduction") && lower.includes("sidelying")) motionKey = "Hip Adduction – Sidelying";
+  else if (lower.includes("abduction") && lower.includes("supine")) motionKey = "Hip Abduction – Supine";
+  else if (lower.includes("adduction") && lower.includes("supine")) motionKey = "Hip Adduction – Supine";
+  else if ((lower.includes("internal rotation") || lower.includes("ir")) && lower.includes("sitting")) motionKey = "Hip IR – Sitting";
+  else if ((lower.includes("external rotation") || lower.includes("er")) && lower.includes("sitting")) motionKey = "Hip ER – Sitting";
+  else if ((lower.includes("internal rotation") || lower.includes("ir")) && lower.includes("prone")) motionKey = "Hip IR – Prone";
+  else if ((lower.includes("external rotation") || lower.includes("er")) && lower.includes("prone")) motionKey = "Hip ER – Prone";
+
+  return { side, motionKey };
+}
+
+// Generate output table from forces
+function generateOutput(forces, pctBW, bw) {
+  let output = "HIP STRENGTH TESTING (%BW)\n\n";
+  output += ["Motion","R Force","L Force","R %BW","L %BW","Normative %BW","Normative Force (lb)","Diff R (lb)","Diff L (lb)"].join("\t") + "\n";
+
+  Object.keys(normativeValues).forEach(motion => {
+    const rF = forces.Right[motion] || "";
+    const lF = forces.Left[motion] || "";
+    const rPct = pctBW.Right[motion] || "";
+    const lPct = pctBW.Left[motion] || "";
+    const normPct = normativeValues[motion];
+    const normLb = (bw * normPct / 100).toFixed(1);
+    const diffR = rF ? (parseFloat(rF) - normLb).toFixed(1) : "";
+    const diffL = lF ? (parseFloat(lF) - normLb).toFixed(1) : "";
+
+    output += [motion,rF,lF,rPct,lPct,normPct,normLb,diffR,diffL].join("\t") + "\n";
+  });
+
+  output += "\nInterpretation:\n";
+  output += "- R/L Force: measured in lb.\n";
+  output += "- %BW: normalized to body weight.\n";
+  output += "- Normative Force calculated from patient BW and normative %BW.\n";
+  output += "- Difference = Measured Force – Normative Force (lb).\n";
+  output += "- Normative values from Alvarenga et al., 2019 (PMID 30988661).\n";
+
+  document.getElementById("output").value = output.trim();
+}
+
+// Calculate from typed table
+function calculateTyped() {
+  const bw = parseFloat(document.getElementById("bw").value);
+  if (!bw || bw <= 0) return;
+
+  const forces = { Right: {}, Left: {} };
+  const pctBW = { Right: {}, Left: {} };
+
+  document.querySelectorAll(".strength").forEach(row => {
+    const valInput = row.querySelector(".value");
+    const label = row.dataset.label.trim();
+    const val = parseFloat(valInput.value);
+    if (isNaN(val)) return;
+
+    const { side, motionKey } = mapMotion(label);
+    if (!motionKey) return;
+
+    forces[side][motionKey] = val.toFixed(1);
+    pctBW[side][motionKey] = (val / bw * 100).toFixed(1);
+  });
+
+  generateOutput(forces, pctBW, bw);
+}
+
+// Calculate from batch paste
+function calculateBatch() {
+  const bw = parseFloat(document.getElementById("bw").value);
+  if (!bw || bw <= 0) {
+    alert("Please enter valid body weight.");
+    return;
+  }
+
+  const inputText = document.getElementById("inputData").value.trim();
+  if (!inputText) return;
+
+  const forces = { Right: {}, Left: {} };
+  const pctBW = { Right: {}, Left: {} };
+
+  const lines = inputText.split(/\r?\n/);
+  lines.forEach(line => {
+    const parts = line.split(/\t|,/).map(p => p.trim());
+    if (parts.length < 2) return;
+    const motionRaw = parts[0];
+    const val = parseFloat(parts[1]);
+    if (isNaN(val)) return;
+
+    const { side, motionKey } = mapMotion(motionRaw);
+    if (!motionKey) return;
+
+    forces[side][motionKey] = val.toFixed(1);
+    pctBW[side][motionKey] = (val / bw * 100).toFixed(1);
+  });
+
+  generateOutput(forces, pctBW, bw);
+}
+
+// Reset all inputs
+function resetAll() {
+  document.getElementById("bw").value = "";
+  document.getElementById("inputData").value = "";
+  document.getElementById("output").value = "";
+  document.querySelectorAll(".value").forEach(i => i.value = "");
+}
+</script>
+</head>
+<body>
+<h2>Hip Strength %BW Calculator - Full Version</h2>
+
+<label>Body Weight (lb): <input type="number" id="bw"></label><br><br>
+
+<h3>Option 1: Type values manually</h3>
+<table>
+<tr><th>Motion</th><th>Force (lb)</th></tr>
+
+<tr class="strength" data-label="Right Hip Flexion in Sitting"><td>R Hip Flexion – Sitting</td><td><input class="value" type="number" oninput="calculateTyped()"></td></tr>
+<tr class="strength" data-label="Right Hip ER in Sitting"><td>R Hip ER – Sitting</td><td><input class="value" type="number" oninput="calculateTyped()"></td></tr>
+<tr class="strength" data-label="Right Hip IR in Sitting"><td>R Hip IR – Sitting</td><td><input class="value" type="number" oninput="calculateTyped()"></td></tr>
+<tr class="strength" data-label="Right Hip ER in Prone"><td>R Hip ER – Prone</td><td><input class="value" type="number" oninput="calculateTyped()"></td></tr>
+<tr class="strength" data-label="Right Hip IR in Prone"><td>R Hip IR – Prone</td><td><input class="value" type="number" oninput="calculateTyped()"></td></tr>
+<tr class="strength" data-label="Right Hip Abduction in Sidelying"><td>R Hip Abd – Sidelying</td><td><input class="value" type="number" oninput="calculateTyped()"></td></tr>
+<tr class="strength" data-label="Right Hip Adduction in Sidelying"><td>R Hip Add – Sidelying</td><td><input class="value" type="number" oninput="calculateTyped()"></td></tr>
+<tr class="strength" data-label="Right Hip Abduction in Supine"><td>R Hip Abd – Supine</td><td><input class="value" type="number" oninput="calculateTyped()"></td></tr>
+<tr class="strength" data-label="Right Hip Adduction in Supine"><td>R Hip Add – Supine</td><td><input class="value" type="number" oninput="calculateTyped()"></td></tr>
+<tr class="strength" data-label="Right Hip Extension in Prone"><td>R Hip Extension – Prone</td><td><input class="value" type="number" oninput="calculateTyped()"></td></tr>
+
+<tr class="strength" data-label="Left Hip Flexion in Sitting"><td>L Hip Flexion – Sitting</td><td><input class="value" type="number" oninput="calculateTyped()"></td></tr>
+<tr class="strength" data-label="Left Hip ER in Sitting"><td>L Hip ER – Sitting</td><td><input class="value" type="number" oninput="calculateTyped()"></td></tr>
+<tr class="strength" data-label="Left Hip IR in Sitting"><td>L Hip IR – Sitting</td><td><input class="value" type="number" oninput="calculateTyped()"></td></tr>
+<tr class="strength" data-label="Left Hip ER in Prone"><td>L Hip ER – Prone</td><td><input class="value" type="number" oninput="calculateTyped()"></td></tr>
+<tr class="strength" data-label="Left Hip IR in Prone"><td>L Hip IR – Prone</td><td><input class="value" type="number" oninput="calculateTyped()"></td></tr>
+<tr class="strength" data-label="Left Hip Abduction in Sidelying"><td>L Hip Abd – Sidelying</td><td><input class="value" type="number" oninput="calculateTyped()"></td></tr>
+<tr class="strength" data-label="Left Hip Adduction in Sidelying"><td>L Hip Add – Sidelying</td><td><input class="value" type="number" oninput="calculateTyped()"></td></tr>
+<tr class="strength" data-label="Left Hip Abduction in Supine"><td>L Hip Abd – Supine</td><td><input class="value" type="number" oninput="calculateTyped()"></td></tr>
+<tr class="strength" data-label="Left Hip Adduction in Supine"><td>L Hip Add – Supine</td><td><input class="value" type="number" oninput="calculateTyped()"></td></tr>
+<tr class="strength" data-label="Left Hip Extension in Prone"><td>L Hip Extension – Prone</td><td><input class="value" type="number" oninput="calculateTyped()"></td></tr>
+</table>
+
+<h3>Option 2: Paste entire table</h3>
+<textarea id="inputData" placeholder="Right Hip Flexion in Sitting	41.6&#10;Left Hip Flexion in Sitting	30.4"></textarea><br>
+<button onclick="calculateBatch()">Calculate from Pasted Table</button>
+
+<button onclick="resetAll()">Reset / Clear</button>
+
+<h3>Output → paste directly into Epic or Excel</h3>
+<textarea id="output" placeholder="Calculated table will appear here"></textarea>
+</body>
+</html>
