@@ -27,7 +27,7 @@
       padding: 12px;
       margin-bottom: 10px;
       border: 1px solid #999;
-      width: 300px;
+      width: 320px;
     }
 
     .joint a {
@@ -38,6 +38,10 @@
 
     .disabled {
       color: #777;
+    }
+
+    .qr {
+      margin-top: 10px;
     }
 
     footer {
@@ -60,10 +64,17 @@ and compared with published normative data when available.
 <div class="joint-list">
   <h2>Select Joint</h2>
 
+  <!-- Hip joint -->
   <div class="joint">
     <a href="joints/hip/">Hip</a>
+    <div class="qr">
+      <a href="joints/hip/">
+        <img src="qr/hip-qr.png" alt="QR code for Hip page" width="150">
+      </a>
+    </div>
   </div>
 
+  <!-- Placeholder joints -->
   <div class="joint disabled">
     Knee (coming soon)
   </div>
