@@ -14,6 +14,7 @@ textarea { width: 100%; height: 250px; font-family: Consolas, monospace; font-si
 button { padding: 6px 12px; font-size: 13px; margin-top: 10px; margin-right: 5px; }
 </style>
 <script>
+
 // Normative values in %BW from Alvarenga et al., 2019
 const normativeValues = {
   "Hip Flexion – Sitting": 38.5,
@@ -142,7 +143,24 @@ function resetAll() {
 </script>
 </head>
 <body>
-<h2>Hip Strength %BW Calculator - Full Version</h2>
+  
+  <!-- Back to Home link -->
+  <div style="margin-bottom: 20px;">
+    <a href="../../index.html" style="text-decoration:none; font-weight:bold;">← Back to Home</a>
+  </div>
+
+  <!-- Optional QR code for mobile users -->
+  <div style="margin-bottom: 20px;">
+    <p>Scan to return to Home:</p>
+    <a href="../../index.html">
+      <img src="../../qr/qr_home.png" alt="QR code for Home page" width="120">
+    </a>
+  </div>
+
+  <h2>Hip Strength %BW Calculator - Full Version</h2>
+  
+  <!-- Your Hip calculator table and script go here -->
+</body>
 
 <label>Body Weight (lb): <input type="number" id="bw"></label><br><br>
 
